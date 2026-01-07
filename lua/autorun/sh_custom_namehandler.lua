@@ -144,34 +144,45 @@ if CLIENT then
         return CustomNameHandler:GetDisplayName(ply)
     end)
 
-    -- Override player:Nick() for display purposes
-    local oldNick = FindMetaTable("Player").Nick
-    FindMetaTable("Player").Nick = function(self)
-        if CustomNameHandler.OverlayedNames[self:SteamID()] then
-            return CustomNameHandler.OverlayedNames[self:SteamID()]
-        end
-        return oldNick(self)
-    end
-
-    -- Also override GetName which is used in some places
-    local oldGetName = FindMetaTable("Player").GetName
-    FindMetaTable("Player").GetName = function(self)
-        if CustomNameHandler.OverlayedNames[self:SteamID()] then
-            return CustomNameHandler.OverlayedNames[self:SteamID()]
-        end
-        return oldGetName(self)
-    end
-
-    -- Add Name() alias if it exists
-    if FindMetaTable("Player").Name then
-        local oldName = FindMetaTable("Player").Name
-        FindMetaTable("Player").Name = function(self)
-            if CustomNameHandler.OverlayedNames[self:SteamID()] then
-                return CustomNameHandler.OverlayedNames[self:SteamID()]
+    -- Override player metatable functions after game is fully initialized
+    hook.Add("Initialize", "CustomNameHandler_SetupMetatable", function()
+        local playerMeta = FindMetaTable("Player")
+        if playerMeta then
+            local oldNick = playerMeta.Nick
+            playerMeta.Nick = function(self)
+                if not IsValid(self) then return "Unknown" end
+                local steamID = self:SteamID()
+                if CustomNameHandler.OverlayedNames[steamID] then
+                    return CustomNameHandler.OverlayedNames[steamID]
+                end
+                return oldNick(self)
             end
-            return oldName(self)
+
+            -- Also override GetName which is used in some places
+            local oldGetName = playerMeta.GetName
+            playerMeta.GetName = function(self)
+                if not IsValid(self) then return "Unknown" end
+                local steamID = self:SteamID()
+                if CustomNameHandler.OverlayedNames[steamID] then
+                    return CustomNameHandler.OverlayedNames[steamID]
+                end
+                return oldGetName(self)
+            end
+
+            -- Add Name() alias if it exists
+            if playerMeta.Name then
+                local oldName = playerMeta.Name
+                playerMeta.Name = function(self)
+                    if not IsValid(self) then return "Unknown" end
+                    local steamID = self:SteamID()
+                    if CustomNameHandler.OverlayedNames[steamID] then
+                        return CustomNameHandler.OverlayedNames[steamID]
+                    end
+                    return oldName(self)
+                end
+            end
         end
-    end
+    end)
 end
 
 --[[

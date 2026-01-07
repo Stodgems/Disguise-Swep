@@ -1,7 +1,7 @@
 SWEP.PrintName = "Disguiser"
 SWEP.Author = "Charlie"
 SWEP.Instructions = "Left Click: Change disguise to target player\nRight Click: Toggle disguise on/off"
-SWEP.Category = "Disuiser"
+SWEP.Category = "Disguiser"
 
 SWEP.Spawnable = true
 SWEP.AdminOnly = false
@@ -42,28 +42,48 @@ function SWEP:PrimaryAttack()
     local owner = self:GetOwner()
     if not IsValid(owner) then return end
 
-    local trace = owner:GetEyeTrace()
-    local target = trace.Entity
+    local maxRange = Disguiser.Config and Disguiser.Config.TargetRange or 150
+    local maxFOV = Disguiser.Config and Disguiser.Config.TargetFOV or 15
 
-    if IsValid(target) and target:IsPlayer() and target ~= owner then
-        local maxRange = Disguiser.Config and Disguiser.Config.TargetRange or 150
+    -- Find the closest player within FOV cone
+    local aimDir = owner:GetAimVector()
+    local eyePos = owner:EyePos()
+    local closestTarget = nil
+    local closestDist = maxRange + 1
 
-        if owner:GetPos():Distance(target:GetPos()) <= maxRange then
-            if Disguiser.Config and Disguiser.Config:IsTeamBlacklisted(target:Team()) then
-                Disguiser:ChatPrint(owner, "You cannot disguise as this player's team!")
-                return
-            end
+    for _, ply in ipairs(player.GetAll()) do
+        if ply ~= owner and IsValid(ply) and ply:Alive() then
+            local targetPos = ply:EyePos()
+            local distance = eyePos:Distance(targetPos)
 
-            self:SetDisguiseTarget(owner, target)
-        else
-            if SERVER then
-                Disguiser:ChatPrint(owner, "Target too far away! Get closer.")
+            -- Check if within range
+            if distance <= maxRange then
+                -- Calculate angle between aim direction and direction to target
+                local dirToTarget = (targetPos - eyePos):GetNormalized()
+                local dotProduct = aimDir:Dot(dirToTarget)
+                local angle = math.deg(math.acos(dotProduct))
+
+                -- Check if within FOV cone
+                if angle <= maxFOV then
+                    -- Keep track of closest valid target
+                    if distance < closestDist then
+                        closestDist = distance
+                        closestTarget = ply
+                    end
+                end
             end
         end
+    end
+
+    if IsValid(closestTarget) then
+        if Disguiser.Config and Disguiser.Config:IsTeamBlacklisted(closestTarget:Team()) then
+            Disguiser:ChatPrint(owner, "You cannot disguise as this player's team!")
+            return
+        end
+
+        self:SetDisguiseTarget(owner, closestTarget)
     else
-        if SERVER then
-            Disguiser:ChatPrint(owner, "You must aim at a player to change disguise!")
-        end
+        Disguiser:ChatPrint(owner, "No valid player in range! Get closer or aim at a player.")
     end
 end
 

@@ -21,6 +21,14 @@ Disguiser.Config.ChatPrefix = "Disguiser"
 Disguiser.Config.TargetRange = 150
 
 --[[
+    Target FOV Cone
+    Maximum angle (in degrees) from your aim direction to select a player
+    Lower = more precise aim required, Higher = easier to select moving targets
+    Default: 15 (degrees)
+]]--
+Disguiser.Config.TargetFOV = 15
+
+--[[
     Blacklisted Teams
     Add team IDs to this table to prevent players from disguising as members of these teams
 
