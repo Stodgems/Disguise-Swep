@@ -109,17 +109,24 @@ function SWEP:SetDisguiseTarget(ply, target)
         ply.OriginalPlayerColor = ply:GetPlayerColor()
     end
 
+    if not ply.OriginalBodygroups then
+        ply.OriginalBodygroups = self:GetBodygroups(ply)
+    end
+
     local targetModel = target:GetModel()
     local targetName = CustomNameHandler:GetOriginalName(target)
     local targetColor = target:GetPlayerColor()
+    local targetBodygroups = self:GetBodygroups(target)
 
     ply.DisguiseTargetModel = targetModel
     ply.DisguiseTargetName = targetName
     ply.DisguiseTargetColor = targetColor
+    ply.DisguiseTargetBodygroups = targetBodygroups
 
     if ply.DisguiseEnabled then
         ply:SetModel(targetModel)
         ply:SetPlayerColor(targetColor)
+        self:SetBodygroups(ply, targetBodygroups)
         CustomNameHandler:SetNameOverlay(ply, targetName)
         Disguiser:ChatPrint(ply, "Disguise changed to " .. targetName)
     else
@@ -149,6 +156,10 @@ function SWEP:ToggleDisguise(ply)
             ply:SetPlayerColor(ply.OriginalPlayerColor)
         end
 
+        if ply.OriginalBodygroups then
+            self:SetBodygroups(ply, ply.OriginalBodygroups)
+        end
+
         CustomNameHandler:RemoveNameOverlay(ply)
 
         ply.DisguiseEnabled = false
@@ -166,6 +177,10 @@ function SWEP:ToggleDisguise(ply)
 
         if ply.DisguiseTargetColor then
             ply:SetPlayerColor(ply.DisguiseTargetColor)
+        end
+
+        if ply.DisguiseTargetBodygroups then
+            self:SetBodygroups(ply, ply.DisguiseTargetBodygroups)
         end
 
         CustomNameHandler:SetNameOverlay(ply, ply.DisguiseTargetName)
@@ -193,12 +208,17 @@ function SWEP:OnRemove()
                 owner:SetPlayerColor(owner.OriginalPlayerColor)
             end
 
+            if owner.OriginalBodygroups then
+                self:SetBodygroups(owner, owner.OriginalBodygroups)
+            end
+
             CustomNameHandler:RemoveNameOverlay(owner)
 
             owner.DisguiseEnabled = false
             owner.DisguiseTargetName = nil
             owner.DisguiseTargetModel = nil
             owner.DisguiseTargetColor = nil
+            owner.DisguiseTargetBodygroups = nil
         end
     end
 end
@@ -222,4 +242,27 @@ end
 
 function SWEP:Holster()
     return true
+end
+
+-- Bodygroup helper functions
+function SWEP:GetBodygroups(ply)
+    if not IsValid(ply) then return {} end
+
+    local bodygroups = {}
+    local numBodygroups = ply:GetNumBodyGroups()
+
+    for i = 0, numBodygroups - 1 do
+        bodygroups[i] = ply:GetBodygroup(i)
+    end
+
+    return bodygroups
+end
+
+function SWEP:SetBodygroups(ply, bodygroups)
+    if not IsValid(ply) then return end
+    if not bodygroups then return end
+
+    for i, value in pairs(bodygroups) do
+        ply:SetBodygroup(i, value)
+    end
 end
