@@ -86,11 +86,29 @@ CustomNameHandler.OriginalNick = FindMetaTable("Player").Nick
 --[[
     Get the original name of a player (bypasses overlay)
     @param ply - The player to get the original name for
-    @return string - The player's original name
+    @return string - The player's original name (including VoidFactions faction/rank tags if present)
 ]]--
 function CustomNameHandler:GetOriginalName(ply)
     if not IsValid(ply) then return "Unknown" end
-    return CustomNameHandler.OriginalNick(ply)
+
+    -- VoidFactions support - VoidFactions modifies DarkRP's rpname with faction/rank tags
+    -- The format is: [faction tag] [rank tag] [player name]
+    if VoidFactions and DarkRP then
+        -- VoidFactions uses DarkRP's setDarkRPVar to set the full name with faction/rank
+        -- This includes the faction tag and rank tag prefix
+        local darkRPName = ply:getDarkRPVar("rpname")
+        if darkRPName and darkRPName ~= "" then
+            return darkRPName
+        end
+    end
+
+    -- Fallback to the original Nick function which may be overridden by VoidFactions/DarkRP
+    local nickName = CustomNameHandler.OriginalNick(ply)
+    if nickName and nickName ~= "" then
+        return nickName
+    end
+
+    return "Unknown"
 end
 
 if SERVER then
