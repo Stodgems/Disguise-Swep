@@ -86,10 +86,23 @@ CustomNameHandler.OriginalNick = FindMetaTable("Player").Nick
 --[[
     Get the original name of a player (bypasses overlay)
     @param ply - The player to get the original name for
-    @return string - The player's original name (including VoidFactions faction/rank tags if present)
+    @return string - The player's original name (including rank system regiment/rank tags if present)
 ]]--
 function CustomNameHandler:GetOriginalName(ply)
     if not IsValid(ply) then return "Unknown" end
+
+    -- RDV Rank System support - Gets the full formatted name with regiment + rank + name
+    -- The format is: {branch} {rank} {name} (e.g., "501st CPL John")
+    if RDV and RDV.RANK and RDV.RANK.CFG and RDV.RANK.CFG.Name and RDV.RANK.CFG.Name.Enabled then
+        -- Use the rank system's Name() function which includes regiment and rank
+        local playerMeta = FindMetaTable("Player")
+        if playerMeta and playerMeta.Name then
+            local fullName = playerMeta.Name(ply)
+            if fullName and fullName ~= "" then
+                return fullName
+            end
+        end
+    end
 
     -- VoidFactions support - VoidFactions modifies DarkRP's rpname with faction/rank tags
     -- The format is: [faction tag] [rank tag] [player name]
